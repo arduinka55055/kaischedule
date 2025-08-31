@@ -1,6 +1,8 @@
+// Спонсор показу: клятий CORS
+// клятий CORS: піднімай свій сервер навіть для 100% локальної проги.
 const nauGroupScheduleURL = "https://cors-anywhere.herokuapp.com/https://portal.nau.edu.ua/schedule/group"
 
-// Fixed timetable lookup: startTime => timetable index
+// Табличка часу розкладу
 const timeToIndex = {
     "08:00": 1,
     "09:50": 2,
@@ -10,7 +12,7 @@ const timeToIndex = {
     "17:10": 6
 };
 
-// Map day names to indexes (0 = Monday)
+// Мапинг днів тижня до індексів
 const dayToIndex = {
     "Понеділок": 0,
     "Вівторок": 1,
@@ -21,7 +23,18 @@ const dayToIndex = {
     "Неділя": 6
 };
 
-// Helper to parse a "pair"
+// Мапинг індексів у дні тижня
+const daysOfWeek = [
+    { name: 'Понеділок', shortName: 'Пн' },
+    { name: 'Вівторок', shortName: 'Вт' },
+    { name: 'Середа', shortName: 'Ср' },
+    { name: 'Четвер', shortName: 'Чт' },
+    { name: "П'ятниця", shortName: 'Пт' },
+    { name: 'Субота', shortName: 'Сб' },
+    { name: 'Неділя', shortName: 'Нд' }
+];
+
+// Хелпер щоб парсити пари розкладу групи
 function parsePair(pair) {
     const event = pair.querySelector(".subject")?.textContent.trim() ?? "";
     const place = (pair.querySelector(".room")?.textContent.trim() ?? "").replace("ауд. ", "");
@@ -33,26 +46,24 @@ function parsePair(pair) {
     return { event, place, note, timetable, type: eventType };
 }
 
-async function extractGroupScheduleHTML(groupID = 334) {
-    debugger;
+async function extractGroupScheduleHTML(groupID) {
+    //debugger;
     const response = await fetch(nauGroupScheduleURL + "?id=" + groupID, {
         headers: {
             "x-requested-with": "https://cors-anywhere.herokuapp.com/"
         }
     });
-    console.log(response)
     const htmlText = await response.text();
-    console.log(htmlText)
 
-    // Parse into DOM
+    // DOM парсинг
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlText, "text/html");
 
-    // Initialize week structures
+    // Структура тижнів
     const scheduleWeek1 = Array.from({ length: 7 }, () => []);
     const scheduleWeek2 = Array.from({ length: 7 }, () => []);
 
-    // Parse week tables
+    // Парсинг табличок з сайту КАІ
     const tables = doc.querySelectorAll("table.schedule");
     tables.forEach((table, weekIndex) => {
         const weekSchedule = weekIndex === 0 ? scheduleWeek1 : scheduleWeek2;
@@ -75,13 +86,12 @@ async function extractGroupScheduleHTML(groupID = 334) {
         });
     });
 
-    // Output result
-    console.log("Week 1 Schedule:", scheduleWeek1);
-    console.log("Week 2 Schedule:", scheduleWeek2);
+    // Дебаг виведення
+    console.log("Груповий розклад тижня 1:", scheduleWeek1);
+    console.log("Груповий розклад тижня 2:", scheduleWeek2);
 
     return [scheduleWeek1, scheduleWeek2]
 }
-
 
 
 
@@ -448,47 +458,35 @@ var individualData = [
 ];
 
 
-debugger;
-
+// Засунути індивідуальні предмети у груповий розклад
 function enhanceSchedule(groupSchedule, individualData, weekNumber) {
-    // Clone original schedule
-    const enhanced2 = groupSchedule.map(dayEvents => dayEvents.slice());
 
-    const enhanced = enhanced2.map(day =>
+    // Вирізаємо Вибіркові дисципліни
+    const enhanced = groupSchedule.map(day =>
         day.filter(event => !event.event.startsWith("Вибіркові дисципліни"))
     );
 
-    // Filter individual lessons for this week
+    // Фільтр індивідуальних по цьому тижню
     const weekLessons = individualData.filter(item => item.week.startsWith(weekNumber));
-
-    debugger;
 
     weekLessons.forEach(lesson => {
         const dayIdx = dayToIndex[lesson.day];
         const timetable = timeToIndex[lesson.startTime];
         if (dayIdx === undefined || timetable === undefined) return;
 
-        // Replace any "Вибіркові дисципліни" entry at this time
         const dayEvents = enhanced[dayIdx];
-        debugger;
-        // Remove any existing "Вибіркові дисципліни" at this timetable
-        for (let i = dayEvents.length - 1; i >= 0; i--) {
-            if (dayEvents[i].event.includes("Вибіркові дисципліни")) {
-                dayEvents.splice(i, 1);
-            }
-        }
 
         // Push new individual lesson
         dayEvents.push({
             event: lesson.discipline,
-            place: "",         // no classroom info
+            place: "Індивід.",         // no classroom info
             note: "",          // no teacher info
             timetable: timetable,
-            type: lesson.type  // use type from individualData
+            type: lesson.type.includes("Лекц") ? "Лекція" : lesson.type // use type from individualData
         });
     });
 
-    // Sort each day's events by timetable
+    //Сортуємо події по timetable
     enhanced.forEach(dayEvents => dayEvents.sort((a, b) => a.timetable - b.timetable));
 
     return enhanced;
@@ -502,35 +500,14 @@ const enhancedSchedule2 = enhanceSchedule(mocksched2, individualData, "2 тиж�
 console.log(enhancedSchedule1);
 console.log(enhancedSchedule2);
 
-//////
 
-
-
-// Regex helper
-function regexMatch(s, pattern) {
-    const match = s.match(pattern);
-    return match ? match[1] : "";
-}
-
-// Generate schedule HTML
-async function generateSchedule(week1File, week2File) {
-    const week1Data = enhancedSchedule1;//await loadJSON(week1File);
-    const week2Data = enhancedSchedule2;// await loadJSON(week2File);
-
-    const daysOfWeek = [
-        { name: 'Понеділок', shortName: 'Пн' },
-        { name: 'Вівторок', shortName: 'Вт' },
-        { name: 'Середа', shortName: 'Ср' },
-        { name: 'Четвер', shortName: 'Чт' },
-        { name: "П'ятниця", shortName: 'Пт' },
-        { name: 'Субота', shortName: 'Сб' },
-        { name: 'Неділя', shortName: 'Нд' }
-    ];
-
-    const weeks = [
-        { weekNumber: 1, days: daysOfWeek.map((d, i) => ({ ...d, events: week1Data[i] })) },
-        { weekNumber: 2, days: daysOfWeek.map((d, i) => ({ ...d, events: week2Data[i] })) }
-    ];
+// Генератор HTML
+function generateSchedule(week1Data, week2Data) {
+    const weeks = daysOfWeek.map((day, dayIdx) => ({
+        ...day,
+        week1Events: week1Data[dayIdx],
+        week2Events: week2Data[dayIdx]
+    }));
 
     // Generate HTML
     const html = `
@@ -547,7 +524,7 @@ table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 h3 { margin-left:5mm; }
 th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top; }
 .day-header { background: #f8f9fa; font-weight: bold; width: 10mm; text-align: center; }
-.rotated-text { writing-mode: sideways-lr; display: inline-block; white-space: nowrap; text-align: center; padding-top: 2mm; }
+.rotated-text { transform: rotate(-90deg); transform-origin: left top; white-space: nowrap; display: inline-block; white-space: nowrap; text-align: center; padding-top: 1mm; text-align: right; width: 25mm; position: relative; top: 26mm; }
 .time-slot { width: 5mm; text-align: center; }
 .room { width: 20mm; border-right: 2px solid; }
 .lecture { background-color: #eaeaea !important; }
@@ -559,9 +536,8 @@ th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top; }
 </style>
 </head>
 <body>
-${weeks.map(week => `
 <div class="page">
-<h3>Тиждень ${week.weekNumber}</h3>
+<h3>Навчальний розклад (тиждень 1 / тиждень 2)</h3>
 <table>
 <colgroup>
 <col class="day-header">
@@ -573,51 +549,51 @@ ${weeks.map(week => `
 </colgroup>
 <thead>
 <tr>
-<th></th><th>Пара</th><th>I підгрупа</th><th>Ауд.</th><th>II підгрупа</th><th>Ауд.</th>
+<th></th><th></th><th>1 тиждень</th><th>Ауд.</th><th>2 тиждень</th><th>Ауд.</th>
 </tr>
 </thead>
 <tbody>
-${week.days.map(day => {
-        return Array.from({ length: 6 }, (_, time) => {
-            const timeIndex = time + 1;
-            const events = day.events.filter(e => e.timetable === timeIndex);
-            let rowHtml = `<tr${time === 0 ? ' style="border-top:2px solid;"' : ''}>`;
-            if (time === 0) {
-                rowHtml += `<td class="day-header" rowspan="6"><div class="rotated-text">${day.name}</div></td>`;
-            }
-            rowHtml += `<td>${timeIndex}</td>`;
+${weeks.map(day => {
+    return Array.from({ length: 6 }, (_, timeIdx) => {
+        const time = timeIdx + 1;
+        const w1Event = day.week1Events.find(e => e.timetable === time);
+        const w2Event = day.week2Events.find(e => e.timetable === time);
 
-            for (let subgroup = 1; subgroup <= 2; subgroup++) {
-                let subgroupEvent = events.find(e => e.grouptype === `Підгрупа ${subgroup}`);
-                if (!subgroupEvent && events.length && (events[0].type === "Лекція" || !events[0].grouptype)) {
-                    subgroupEvent = events[0];
-                }
-                const lectureClass = subgroupEvent && subgroupEvent.type === "Лекція" ? "lecture" : "";
-                rowHtml += `<td class="${lectureClass}">${subgroupEvent ? `<strong>${subgroupEvent.event}</strong><br>${subgroupEvent.note || ''}` : ''}</td>`;
-                rowHtml += `<td class="${lectureClass}">${subgroupEvent ? regexMatch(subgroupEvent.place || '', /\.([\d\.-]+)/) : ''}</td>`;
-            }
+        const lectureClass1 = w1Event && w1Event.type === "Лекція" ? "lecture" : "";
+        const lectureClass2 = w2Event && w2Event.type === "Лекція" ? "lecture" : "";
 
-            rowHtml += `</tr>`;
-            return rowHtml;
-        }).join('');
-    }).join('')}
+        // Only render day header on first row
+        const dayHeaderHtml = timeIdx === 0
+            ? `<td class="day-header" rowspan="6"><div class="rotated-text">${day.name}</div></td>`
+            : "";
+
+        return `
+<tr${timeIdx === 0 ? ' style="border-top:2px solid;"' : ''}>
+${dayHeaderHtml}
+<td>${time}</td>
+<td class="${lectureClass1}">${w1Event ? `<strong>${w1Event.event}</strong><br>${w1Event.note || ''}` : ''}</td>
+<td class="${lectureClass1}">${w1Event ? w1Event.place : ''}</td>
+<td class="${lectureClass2}">${w2Event ? `<strong>${w2Event.event}</strong><br>${w2Event.note || ''}` : ''}</td>
+<td class="${lectureClass2}">${w2Event ? w2Event.place : ''}</td>
+</tr>`;
+    }).join('');
+}).join('')}
 </tbody>
 </table>
-<br>
 </div>
-`).join('')}
 </body>
 </html>
 `;
 
+    return html;
+}
 
-    // Or trigger download
+
+function downloadHTML(html){
+    // Trigger download
     const blob = new Blob([html], { type: "text/html" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "schedule.html";
     a.click();
 }
-
-// Example usage
-generateSchedule();
