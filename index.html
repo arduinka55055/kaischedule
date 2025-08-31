@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 
 <head>
     <meta charset="UTF-8">
@@ -9,6 +9,8 @@
     <script src="https://unpkg.com/ical.js@1.4.0/dist/ical.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="index.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
         .schedule-event {
             transition: all 0.2s ease;
@@ -28,93 +30,125 @@
                 height: 400px;
             }
         }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: #4f46e5;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .gradient-border {
+            position: relative;
+            border-radius: 12px;
+            background: white;
+        }
+
+        .gradient-border::before {
+            content: "";
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #4f46e5, #ec4899, #f59e0b);
+            border-radius: 14px;
+            z-index: -1;
+        }
     </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
+<body class="bg-gradient-to-br from-indigo-50 to-blue-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
         <!-- Header -->
         <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-indigo-700 mb-2">Генератор Індивідуальних Розкладів КАІ</h1>
-            <p class="text-gray-600 max-w-2xl mx-auto">
-                Згенеруй кращий розклад, який зручніше читати за допомоги цього веб-сайту! Також можна завантажити файл
-                гугл-календаря, який за півгодини до заняття казатиме куди йти.
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">Генератор Індивідуальних Розкладів КАІ</h1>
+            <p class="text-gray-700 text-lg max-w-3xl mx-auto leading-relaxed">
+                Згенеруй кращий розклад, який зручніше читати за допомоги цього веб-сайту! 
+                Також можна завантажити файл гугл-календаря, який за півгодини до заняття казатиме куди йти.
             </p>
         </header>
 
-        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <!-- Security Notice -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                            fill="currentColor">
-                            <path fill-rule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-blue-800">Security First</h3>
-                        <div class="mt-2 text-sm text-blue-700">
-                            <p>
-                                Увага: Вся обробка даних здійснюється локально у вашому браузері. Ваші дані ніколи не
-                                покидають ваш комп'ютер.
-                                Не вірите? Подивіться <a href="https://github.com/foo/bar"
-                                    style="color:blue;text-decoration:underline;">вихідний код на GitHub!</a> Буду
-                                вдячний за зірочку!
-                            </p>
+        <!-- Main Content Card -->
+        <div class="gradient-border p-1 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+                <!-- Security Notice -->
+                <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-8">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-blue-800">Security First</h3>
+                            <div class="mt-1 text-sm text-blue-700">
+                                <p>
+                                    Увага: Вся обробка даних здійснюється локально у вашому браузері. Ваші дані ніколи не покидають ваш комп'ютер.
+                                    Не вірите? Подивіться <a href="https://github.com/foo/bar" class="font-medium underline">вихідний код на GitHub!</a> Буду вдячний за зірочку!
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Step 1: Group Selection -->
-            <div class="mb-4">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">
-                    Крок 1: Вибери свою групу (це підтягне "спільний" розклад)
-                </h2>
-
-                <select class="form-select mb-3 groupComboBox" onchange="onGroupComboBoxChange()" autocomplete="off">
-                    <option value="">-- Вибір групи --</option>
-                    <option value="334">Б-122-22-2-ТП</option>
-                    <option value="332">Б-122-22-1-ТП</option>
-                    <option value="333">Б-122-22-1-УС</option>
-                    <option value="335">Б-122-22-2-УС</option>
-                    <option value="336">Б-122-22-3-УС</option>
-                </select>
-                <br>
-
-                <label for="group-id" class="form-label">Або введи айді групи якщо її нема у випадаючому списку:</label>
-                <input type="number" id="group-id" class="form-control" style="background: #eee;"
-                    placeholder="Наприклад, 334" autocomplete="off">
+                <!-- Step 1: Group Selection -->
                 <div class="mb-8">
-                    Айді групи треба взяти з сайту КАІ, посилання типу <code
-                        class="bg-gray-200 px-2 rounded">https://portal.nau.edu.ua/schedule/group?id=334</code>
-                    <br>
-                    Відповідно, на цьому сайті пишемо 334.
+                    <div class="flex items-center mb-4">
+                        <div class="step-number">1</div>
+                        <h2 class="text-xl font-semibold text-gray-800">Вибери свою групу</h2>
+                    </div>
+                    <p class="text-gray-600 mb-4 ml-11">(це підтягне "спільний" розклад)</p>
+
+                    <div class="ml-11 space-y-4">
+                        <select class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm groupComboBox" onchange="onGroupComboBoxChange()" autocomplete="off">
+                            <option value="">-- Вибір групи --</option>
+                            <option value="334">Б-122-22-2-ТП</option>
+                            <option value="332">Б-122-22-1-ТП</option>
+                            <option value="333">Б-122-22-1-УС</option>
+                            <option value="335">Б-122-22-2-УС</option>
+                            <option value="336">Б-122-22-3-УС</option>
+                        </select>
+
+                        <div>
+                            <label for="group-id" class="block text-sm font-medium text-gray-700 mb-1">Або введи айді групи якщо її нема у випадаючому списку:</label>
+                            <input type="number" id="group-id" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm" placeholder="Наприклад, 334" autocomplete="off">
+                        </div>
+
+                        <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                            Айді групи треба взяти з сайту КАІ, посилання типу 
+                            <code class="bg-gray-200 px-2 py-1 rounded text-sm">https://portal.nau.edu.ua/schedule/group?id=334</code>
+                            <br>
+                            Відповідно, на цьому сайті пишемо 334.
+                        </div>
+                    </div>
                 </div>
 
-            </div>
+                <!-- Step 2: JS Code Instructions -->
+                <div class="mb-8">
+                    <div class="flex items-center mb-4">
+                        <div class="step-number">2</div>
+                        <h2 class="text-xl font-semibold text-gray-800">Витягни дані з індивідуального розкладу</h2>
+                    </div>
 
+                    <div class="ml-11 space-y-4">
+                        <p class="text-gray-600">
+                            Перейди на <a class="text-indigo-600 hover:text-indigo-800 font-medium" href="https://cabinet.nau.edu.ua/students/elective-choice/schedule" target="_blank">сторінку університету</a> з розкладом
+                            <br>
+                            Відкрий DevTools (F12) у браузері (це така консолька для розробників) та встав цей код туди:
+                            <br>
+                            Якщо ти користуєшся DevTools вперше, то напиши <code class="bg-gray-200 px-2 py-1 rounded text-sm">allow pasting</code> перед вставкою.
+                        </p>
 
-            <!-- Step 2: JS Code Instructions -->
-            <div class="mb-8">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Крок 2: Витягни дані з індивідуального розкладу.
-                </h2>
-                <p class="text-gray-600 mb-4">Перейди на <a style="color:blue;text-decoration:underline;"
-                        href="https://cabinet.nau.edu.ua/students/elective-choice/schedule" target="_blank">сторінку
-                        університету</a> з
-                    розкладом
-                    <br>
-                    Відкрий DevTools (F12) у браузері (це така консолька для розробників) та встав цей код туди:
-                    <br>
-                    Якщо ти користуєшся DevTools вперше, то напиши <code style="display:inline;">allow pasting</code>
-                    перед вставкою.
-                </p>
-
-                <div class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-x-auto mb-4">
-                    <pre><code class="language-js">
+                        <div class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto relative">
+                            <pre class="text-sm"><code class="language-javascript">
 // Schedule scraper for DevTools console
 function scrapeSchedule() {
     const result = [];
@@ -171,33 +205,33 @@ const jsonData = JSON.stringify(scrapedData, null, 2);
 copy(jsonData);
 console.log('Schedule data copied to clipboard!');
 console.log(jsonData);
-                    </code></pre>
-                    <div class="text-right mb-4">
-                        <button id="copyCodeBtn"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
-                            Копіювати код.
-                        </button>
+                            </code></pre>
+                            <div class="mt-2 flex justify-end">
+                                <button id="copyCodeBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                    </svg>
+                                    Копіювати код
+                                </button>
+                            </div>
+                        </div>
+
+                        <p class="text-gray-600 text-sm">
+                            Цей код просто перетворює нутрощі сайту КАІ у формат читаємий комп'ютером (JSON). Таким чином цей сайт
+                            об'єднає твій індивідуальний розклад зі спільним для групи.
+                        </p>
                     </div>
                 </div>
-                <!-- Highlight.js for syntax highlighting -->
-                <link rel="stylesheet"
-                    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-                <script>hljs.highlightAll();</script>
-            </div>
 
-            <p class="text-gray-600 text-sm">
-                Цей код просто перетворює нутрощі сайту КАІ у формат читаємий комп'ютером (JSON). Таким чином цей сайт
-                об'єднає твій індивідуальний розклад зі спільним для групи.
-            </p>
-        </div>
+                <!-- Step 3: JSON Input -->
+                <div class="mb-8">
+                    <div class="flex items-center mb-4">
+                        <div class="step-number">3</div>
+                        <h2 class="text-xl font-semibold text-gray-800">Встав JSON, який щойно згенерувався сюди:</h2>
+                    </div>
 
-        <!-- Step 3: JSON Input -->
-        <div class="mb-8">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Крок 3: Встав JSON, який щойно згенерувався сюди:</h2>
-            <textarea id="jsonInput"
-                class="w-full h-48 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder='Буде щось типу такого:
+                    <div class="ml-11">
+                        <textarea id="jsonInput" class="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm font-mono text-sm" placeholder='Буде щось типу такого:
 [
   {
     "discipline": "Розумне споживання та сталий розвиток",
@@ -215,68 +249,67 @@ console.log(jsonData);
     "day": "Понеділок",
     "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
   }
+  ...і так далі'></textarea>
+                    </div>
+                </div>
 
-
-...і так далі'></textarea>
+                <!-- Step 4: Generate Button -->
+                <div class="text-center">
+                    <button id="generateBtn" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-md">
+                        Крок 4: ГЕНЕРУЄМО РОЗКЛАД!
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- Generate Button -->
-        <div class="text-center mb-8">
-            <button id="generateBtn"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-200">
-                Крок 4: ГЕНЕРУЄМО РОЗКЛАД!
-            </button>
-        </div>
-    </div>
+        <!-- Results Section (Initially Hidden) -->
+        <div id="resultsSection" class="hidden gradient-border p-1 mb-8">
+            <div class="bg-white rounded-xl p-6">
+                <h2 class="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Твій покращений розклад:</h2>
 
-    <!-- Results Section (Initially Hidden) -->
-    <div id="resultsSection" class="hidden bg-white rounded-xl shadow-lg p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Твій покращений розклад:</h2>
+                <div class="border rounded-lg overflow-hidden mb-6">
+                    <iframe class="exportIframe w-full" style="height: 600px;"></iframe>
+                </div>
 
-        <iframe class="exportIframe"></iframe>
-
-        <!-- Export Options -->
-        <div class="bg-gray-50 rounded-lg p-6">
-            <h3 class="text-xl font-semibold text-gray-700 mb-4 text-center">Експорт</h3>
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                <button id="downloadHTMLbtn"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
-                        </path>
-                    </svg>
-                    Скачати HTML
-                </button>
-                <button id="saveImage"
-                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                        </path>
-                    </svg>
-                    Зберегти як картинку
-                </button>
-
+                <!-- Export Options -->
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold text-center text-gray-700 mb-4">Експорт</h3>
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <button id="downloadHTMLbtn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                            </svg>
+                            Скачати HTML
+                        </button>
+                        <button id="saveImage" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Зберегти як картинку
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    </div>
-    <footer style="padding: 5px; background: lightgray;">
-        Щось не виходить? Дай мені знати: <a href="mailto:admin@sudohub.dev">admin@sudohub.dev</a>
+
+    <footer class="bg-gray-800 text-white text-center py-4 mt-8">
+        <div class="container mx-auto px-4">
+            <p class="text-sm">Щось не виходить? Дай мені знати: <a href="mailto:admin@sudohub.dev" class="text-indigo-300 hover:text-indigo-100">admin@sudohub.dev</a></p>
+        </div>
     </footer>
 
     <script>
+        // Initialize syntax highlighting
+        hljs.highlightAll();
 
         function onGroupComboBoxChange() {
+            debugger;
             const option = document.querySelector(".groupComboBox").value;
             if (option?.length == 0) return;
 
             document.querySelector('#group-id').value = option;
         }
-
 
         document.addEventListener('DOMContentLoaded', function () {
             const generateBtn = document.getElementById('generateBtn');
@@ -306,7 +339,6 @@ console.log(jsonData);
                     }
                     const [groupSchedule1, groupSchedule2] = await extractGroupScheduleHTML(selectedGroupID);
 
-
                     const enhancedSchedule1 = enhanceSchedule(groupSchedule1, individualSchedule, "1 тиждень");
                     const enhancedSchedule2 = enhanceSchedule(groupSchedule2, individualSchedule, "2 тиждень");
 
@@ -318,7 +350,6 @@ console.log(jsonData);
                     iframe.width = "1200";
                     iframe.height = "1200";
 
-
                     resultsSection.classList.remove('hidden');
 
                     // Scroll to results
@@ -329,9 +360,7 @@ console.log(jsonData);
                 }
             });
 
-
             downloadHTMLBtn.addEventListener('click', function () {
-
                 let html = document.querySelector(".exportIframe").srcdoc;
                 downloadHTML(html);
             });
@@ -356,22 +385,28 @@ console.log(jsonData);
                 link.click();
             });
 
-
             document.getElementById('copyCodeBtn').addEventListener('click', function () {
-                const codeElement = document.querySelector('code.language-js');
+                const codeElement = document.querySelector('code.language-javascript');
                 const codeText = codeElement.textContent;
                 navigator.clipboard.writeText(codeText).then(() => {
-                    alert('Код було зкопійовано!');
+                    // Show a nice notification instead of alert
+                    const btn = document.getElementById('copyCodeBtn');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Скопійовано!';
+                    btn.classList.remove('bg-indigo-600');
+                    btn.classList.add('bg-green-600');
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.remove('bg-green-600');
+                        btn.classList.add('bg-indigo-600');
+                    }, 2000);
                 }).catch(err => {
                     console.error('Failed to copy code:', err);
+                    alert('Не вдалося скопіювати код. Спробуйте ще раз.');
                 });
             });
-
         });
-
-
-
-
     </script>
 </body>
 
