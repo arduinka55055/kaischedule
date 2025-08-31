@@ -1,6 +1,6 @@
 // Спонсор показу: клятий CORS
 // клятий CORS: піднімай свій сервер навіть для 100% локальної проги.
-const nauGroupScheduleURL = "https://cors-anywhere.herokuapp.com/https://portal.nau.edu.ua/schedule/group"
+const nauGroupScheduleURL = "/proxy/schedule/group"
 
 // Табличка часу розкладу
 const timeToIndex = {
@@ -50,7 +50,7 @@ async function extractGroupScheduleHTML(groupID) {
     //debugger;
     const response = await fetch(nauGroupScheduleURL + "?id=" + groupID, {
         headers: {
-            "x-requested-with": "https://cors-anywhere.herokuapp.com/"
+            //"x-requested-with": "https://cors-anywhere.herokuapp.com/"
         }
     });
     const htmlText = await response.text();
