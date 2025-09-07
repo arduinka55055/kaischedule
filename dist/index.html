@@ -287,6 +287,42 @@ console.log(jsonData);
                             </svg>
                             Зберегти як картинку
                         </button>
+                        <!-- TODO:
+                        <button id="createIcsBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Створити календар ICS
+                        </button>
+                        -->
+                    </div>
+                </div>
+
+                <!-- ICS Modal (hidden by default) -->
+                <div id="icsModal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+                    <div class="absolute inset-0 bg-black bg-opacity-50" id="icsModalOverlay"></div>
+                    <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6 z-10">
+                        <div class="flex items-start justify-between">
+                            <h4 class="text-lg font-semibold">Експорт до ICS</h4>
+                            <button id="icsModalClose" class="text-gray-500 hover:text-gray-700">✕</button>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2">Оберіть проміжок дат для експорту календаря.</p>
+
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="icsStart" class="block text-sm font-medium text-gray-700 mb-1">Початкова дата</label>
+                                <input type="date" id="icsStart" class="w-full p-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label for="icsEnd" class="block text-sm font-medium text-gray-700 mb-1">Кінцева дата</label>
+                                <input type="date" id="icsEnd" class="w-full p-2 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-end gap-3">
+                            <button id="icsCancelBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg">Скасувати</button>
+                            <button id="exportIcsBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">Експорт ICS</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -339,8 +375,8 @@ console.log(jsonData);
                     }
                     const [groupSchedule1, groupSchedule2] = await extractGroupScheduleHTML(selectedGroupID);
 
-                    const enhancedSchedule1 = enhanceSchedule(groupSchedule1, individualSchedule, "1 тиждень");
-                    const enhancedSchedule2 = enhanceSchedule(groupSchedule2, individualSchedule, "2 тиждень");
+                    const enhancedSchedule1 = await enhanceSchedule(groupSchedule1, individualSchedule, "1 тиждень");
+                    const enhancedSchedule2 = await enhanceSchedule(groupSchedule2, individualSchedule, "2 тиждень");
 
                     const htmlStr = generateSchedule(enhancedSchedule1, enhancedSchedule2);
 
@@ -405,6 +441,55 @@ console.log(jsonData);
                     console.error('Failed to copy code:', err);
                     alert('Не вдалося скопіювати код. Спробуйте ще раз.');
                 });
+            });
+
+            // ICS modal handlers
+            const createIcsBtn = document.getElementById('createIcsBtn');
+            const icsModal = document.getElementById('icsModal');
+            const icsModalOverlay = document.getElementById('icsModalOverlay');
+            const icsModalClose = document.getElementById('icsModalClose');
+            const icsCancelBtn = document.getElementById('icsCancelBtn');
+            const exportIcsBtn = document.getElementById('exportIcsBtn');
+
+            function openIcsModal() {
+                icsModal.classList.remove('hidden');
+                icsModal.classList.add('flex');
+            }
+
+            function closeIcsModal() {
+                icsModal.classList.add('hidden');
+                icsModal.classList.remove('flex');
+            }
+
+            createIcsBtn.addEventListener('click', function () {
+                openIcsModal();
+            });
+
+            icsModalOverlay.addEventListener('click', function () {
+                closeIcsModal();
+            });
+
+            icsModalClose.addEventListener('click', function () {
+                closeIcsModal();
+            });
+
+            icsCancelBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                closeIcsModal();
+            });
+
+            exportIcsBtn.addEventListener('click', function () {
+                const start = document.getElementById('icsStart').value;
+                const end = document.getElementById('icsEnd').value;
+                          
+                if (!start || !end) {
+                    alert('Будь ласка, вкажіть початкову та кінцеву дати.');
+                    return;
+                }
+
+                // NOTE: Actual ICS generation logic is intentionally skipped per request.
+                alert('Експорт ICS запущено для періоду: ' + start + ' — ' + end + '\n(Логіка створення файлу ICS пропущена)');
+                closeIcsModal();
             });
         });
     </script>

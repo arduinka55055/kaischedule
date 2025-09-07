@@ -1,6 +1,7 @@
 // Спонсор показу: клятий CORS
 // клятий CORS: піднімай свій сервер навіть для 100% локальної проги.
 const nauGroupScheduleURL = "/proxy/schedule/group"
+const nauElectiveScheduleURL = "/proxy/schedule/elective"
 
 // Табличка часу розкладу
 const timeToIndex = {
@@ -22,6 +23,15 @@ const dayToIndex = {
     "Субота": 5,
     "Неділя": 6
 };
+
+const timetable = [
+    ["08:00", "09:35"],
+    ["09:50", "11:25"],
+    ["11:40", "13:15"],
+    ["13:30", "15:05"],
+    ["15:20", "16:55"],
+    ["17:10", "18:45"]
+];
 
 // Мапинг індексів у дні тижня
 const daysOfWeek = [
@@ -94,372 +104,69 @@ async function extractGroupScheduleHTML(groupID) {
 }
 
 
+function normalize(str) {
+  return str
+    // decode HTML entities
+    .replace(/&[#A-Za-z0-9]+;/g, entity => {
+      const txt = document.createElement("textarea");
+      txt.innerHTML = entity;
+      return txt.value;
+    })
+    // keep only English + Ukrainian letters and spaces
+    .replace(/[^a-zA-Zа-щА-ЩЬьЮюЯяЇїІіЄєҐґ ]/g, "")
+    // collapse extra spaces
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+// Отримати інфу з індивід. дисциплін (як завжди її засунули у саму дупу)
+async function getScheduleInfo(day_id, hour_id, discipline) {
 
-//extractGroupScheduleHTML(334)
+    try {
+        // Fetch the page
+        const response = await fetch(nauElectiveScheduleURL + `?day_id=${day_id}&hour_id=${hour_id}`, { mode: "cors" });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+        }
 
+        // Get HTML text
+        const html = await response.text();
 
-var mocksched1 = [
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        },
-        {
-            "event": "Теорія прийняття рішень",
-            "place": "6.203",
-            "note": "Воронін Альберт Миколайович",
-            "timetable": 3,
-            "type": "Лекція"
-        },
-        {
-            "event": "Технології захисту інформації",
-            "place": "1.403",
-            "note": "Сидоренко Вікторія Миколаївна",
-            "timetable": 4,
-            "type": "Лекція"
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        },
-        {
-            "event": "Технологія створення програмних продуктів",
-            "place": "6.206-1",
-            "note": "Райчев Ігор Едуардович",
-            "timetable": 4,
-            "type": "Лабораторна"
-        },
-        {
-            "event": "Управління ІТ проєктами",
-            "place": "6.202",
-            "note": "Толстікова Олена Володимирівна",
-            "timetable": 5,
-            "type": "Лекція"
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        },
-        {
-            "event": "Методи та системи штучного інтелекту",
-            "place": "11.215",
-            "note": "Савченко Аліна Станіславівна",
-            "timetable": 3,
-            "type": "Лекція"
-        },
-        {
-            "event": "Технологія створення програмних продуктів",
-            "place": "8.104",
-            "note": "Райчев Ігор Едуардович",
-            "timetable": 4,
-            "type": "Лекція"
-        },
-        {
-            "event": "Технології захисту інформації",
-            "place": "6.302-2",
-            "note": "Сидоренко Вікторія Миколаївна",
-            "timetable": 5,
-            "type": "Лабораторна"
-        },
-        {
-            "event": "Методи та системи штучного інтелекту",
-            "place": "6.204",
-            "note": "Мельниченко Поліна Ігорівна",
-            "timetable": 6,
-            "type": "Лабораторна"
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        }
-    ],
-    [],
-    []
-]
+        // Parse it into a DOM
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
 
-var mocksched2 = [
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        },
-        {
-            "event": "Управління ІТ проєктами",
-            "place": "8.103",
-            "note": "Толстікова Олена Володимирівна",
-            "timetable": 3,
-            "type": "Лекція"
-        },
-        {
-            "event": "Теорія прийняття рішень",
-            "place": "6.201",
-            "note": "Воронін Альберт Миколайович",
-            "timetable": 4,
-            "type": "Лекція"
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        },
-        {
-            "event": "Методи та системи штучного інтелекту",
-            "place": "6.206-1",
-            "note": "Мельниченко Поліна Ігорівна",
-            "timetable": 3,
-            "type": "Лабораторна"
-        },
-        {
-            "event": "Управління ІТ проєктами",
-            "place": "6.206-1",
-            "note": "Водоп`янов Сергій В`ячеславович",
-            "timetable": 4,
-            "type": "Лабораторна"
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        },
-        {
-            "event": "Методи та системи штучного інтелекту",
-            "place": "6.302-2",
-            "note": "Савченко Аліна Станіславівна",
-            "timetable": 3,
-            "type": "Лекція"
-        },
-        {
-            "event": "Технологія створення програмних продуктів",
-            "place": "3.201",
-            "note": "Райчев Ігор Едуардович",
-            "timetable": 4,
-            "type": "Лекція"
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        },
-        {
-            "event": "Теорія прийняття рішень",
-            "place": "6.206-1",
-            "note": "Мельниченко Поліна Ігорівна",
-            "timetable": 3,
-            "type": "Лабораторна"
-        },
-        {
-            "event": "Технології захисту інформації",
-            "place": "6.206-2",
-            "note": "Сидоренко Вікторія Миколаївна",
-            "timetable": 4,
-            "type": "Лабораторна"
-        }
-    ],
-    [
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 1,
-            "type": ""
-        },
-        {
-            "event": "Вибіркові дисципліни(з ІІ тижня, 08.09.2025)",
-            "place": "",
-            "note": "Розклад буде в електронному кабінеті здобувача",
-            "timetable": 2,
-            "type": ""
-        }
-    ],
-    [],
-    []
-]
+        // Find all table rows that might contain schedule info
+        const rows = Array.from(doc.querySelectorAll("tr"));
 
+        // Look for discipline in rows
+        const match = rows.find(row => {
+            return normalize(row.textContent).includes(normalize(discipline));
+        });
 
+        if (!match) {
+            debugger;
+            return null; // Not found
+        }
 
-var individualData = [
-    {
-        "discipline": "Розумне споживання та сталий розвиток",
-        "startTime": "08:00",
-        "endTime": "09:35",
-        "type": "Практ.",
-        "day": "Понеділок",
-        "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Проєктна робота в лабораторії Ajax (аеронавігація, електроніка та телекомунікації)",
-        "startTime": "09:50",
-        "endTime": "11:25",
-        "type": "Лаб.",
-        "day": "Понеділок",
-        "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Адміністрування комп'ютерних мереж",
-        "startTime": "09:50",
-        "endTime": "11:25",
-        "type": "Практ.",
-        "day": "Середа",
-        "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Розумне споживання та сталий розвиток",
-        "startTime": "08:00",
-        "endTime": "09:35",
-        "type": "Лекц.",
-        "day": "Четвер",
-        "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Проєктна робота в лабораторії Ajax (аеронавігація, електроніка та телекомунікації)",
-        "startTime": "09:50",
-        "endTime": "11:25",
-        "type": "Лаб.",
-        "day": "Четвер",
-        "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Адміністрування комп'ютерних мереж",
-        "startTime": "09:50",
-        "endTime": "11:25",
-        "type": "Лекц.",
-        "day": "П`ятниця",
-        "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Проєктна робота в лабораторії Ajax (аеронавігація, електроніка та телекомунікації)",
-        "startTime": "09:50",
-        "endTime": "11:25",
-        "type": "Лаб.",
-        "day": "Понеділок",
-        "week": "2 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Адміністрування комп'ютерних мереж",
-        "startTime": "09:50",
-        "endTime": "11:25",
-        "type": "Практ.",
-        "day": "Середа",
-        "week": "2 тиждень (вибіркові розпочинаються з 08.09.2025)"
-    },
-    {
-        "discipline": "Розумне споживання та сталий розвиток",
-        "startTime": "08:00",
-        "endTime": "09:35",
-        "type": "Лекц.",
-        "day": "Четвер",
-        "week": "2 тиждень (вибіркові розпочинаються з 08.09.2025)"
+        // Extract cells for structured data
+        const cells = Array.from(match.querySelectorAll("td")).map(td => td.textContent.trim());
+
+        return {
+            discipline: discipline,
+            rawText: match.textContent.trim(),
+            cells: cells
+        };
+    } catch (err) {
+        console.error("Error:", err);
+        return null;
     }
-];
+}
+
 
 
 // Засунути індивідуальні предмети у груповий розклад
-function enhanceSchedule(groupSchedule, individualData, weekNumber) {
+async function enhanceSchedule(groupSchedule, individualData, weekNumber) {
 
     // Вирізаємо Вибіркові дисципліни
     const enhanced = groupSchedule.map(day =>
@@ -469,22 +176,24 @@ function enhanceSchedule(groupSchedule, individualData, weekNumber) {
     // Фільтр індивідуальних по цьому тижню
     const weekLessons = individualData.filter(item => item.week.startsWith(weekNumber));
 
-    weekLessons.forEach(lesson => {
+    for (const lesson of weekLessons) {
         const dayIdx = dayToIndex[lesson.day];
         const timetable = timeToIndex[lesson.startTime];
         if (dayIdx === undefined || timetable === undefined) return;
 
         const dayEvents = enhanced[dayIdx];
 
+        const electiveInfo = await getScheduleInfo(dayIdx + (weekNumber[0] == "1" ? 1 : 8), timetable, lesson.discipline);
+        debugger;
         // Push new individual lesson
         dayEvents.push({
             event: lesson.discipline,
-            place: "Індивід.",         // no classroom info
-            note: "",          // no teacher info
+            place: electiveInfo?.cells[3],         // classroom info
+            note: electiveInfo?.cells[2],          // teacher info
             timetable: timetable,
             type: lesson.type.includes("Лекц") ? "Лекція" : lesson.type // use type from individualData
         });
-    });
+    }
 
     //Сортуємо події по timetable
     enhanced.forEach(dayEvents => dayEvents.sort((a, b) => a.timetable - b.timetable));
@@ -492,13 +201,6 @@ function enhanceSchedule(groupSchedule, individualData, weekNumber) {
     return enhanced;
 }
 
-
-const enhancedSchedule1 = enhanceSchedule(mocksched1, individualData, "1 тиждень");
-const enhancedSchedule2 = enhanceSchedule(mocksched2, individualData, "2 тиждень");
-
-
-console.log(enhancedSchedule1);
-console.log(enhancedSchedule2);
 
 
 // Генератор HTML
@@ -554,20 +256,20 @@ th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top; }
 </thead>
 <tbody>
 ${weeks.map(day => {
-    return Array.from({ length: 6 }, (_, timeIdx) => {
-        const time = timeIdx + 1;
-        const w1Event = day.week1Events.find(e => e.timetable === time);
-        const w2Event = day.week2Events.find(e => e.timetable === time);
+        return Array.from({ length: 6 }, (_, timeIdx) => {
+            const time = timeIdx + 1;
+            const w1Event = day.week1Events.find(e => e.timetable === time);
+            const w2Event = day.week2Events.find(e => e.timetable === time);
 
-        const lectureClass1 = w1Event && w1Event.type === "Лекція" ? "lecture" : "";
-        const lectureClass2 = w2Event && w2Event.type === "Лекція" ? "lecture" : "";
+            const lectureClass1 = w1Event && w1Event.type === "Лекція" ? "lecture" : "";
+            const lectureClass2 = w2Event && w2Event.type === "Лекція" ? "lecture" : "";
 
-        // Only render day header on first row
-        const dayHeaderHtml = timeIdx === 0
-            ? `<td class="day-header" rowspan="6"><div class="rotated-text">${day.name}</div></td>`
-            : "";
+            // Only render day header on first row
+            const dayHeaderHtml = timeIdx === 0
+                ? `<td class="day-header" rowspan="6"><div class="rotated-text">${day.name}</div></td>`
+                : "";
 
-        return `
+            return `
 <tr${timeIdx === 0 ? ' style="border-top:2px solid;"' : ''}>
 ${dayHeaderHtml}
 <td>${time}</td>
@@ -576,8 +278,8 @@ ${dayHeaderHtml}
 <td class="${lectureClass2}">${w2Event ? `<strong>${w2Event.event}</strong><br>${w2Event.note || ''}` : ''}</td>
 <td class="${lectureClass2}">${w2Event ? w2Event.place : ''}</td>
 </tr>`;
-    }).join('');
-}).join('')}
+        }).join('');
+    }).join('')}
 </tbody>
 </table>
 </div>
@@ -589,7 +291,7 @@ ${dayHeaderHtml}
 }
 
 
-function downloadHTML(html){
+function downloadHTML(html) {
     // Trigger download
     const blob = new Blob([html], { type: "text/html" });
     const a = document.createElement("a");
