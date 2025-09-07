@@ -219,6 +219,8 @@ console.log(jsonData);
                         <p class="text-gray-600 text-sm">
                             Цей код просто перетворює нутрощі сайту КАІ у формат читаємий комп'ютером (JSON). Таким чином цей сайт
                             об'єднає твій індивідуальний розклад зі спільним для групи.
+                            <br>
+                            Якщо ти з телефону, то можеш залишити поле пустим і сайт зробить розклад без вибіркових дисциплін.
                         </p>
                     </div>
                 </div>
@@ -362,10 +364,9 @@ console.log(jsonData);
             generateBtn.addEventListener('click', async function () {
                 var selectedGroupID = document.querySelector('#group-id').value;
                 try {
-                    const jsonText = jsonInput.value.trim();
-                    if (!jsonText) {
-                        alert('Please paste your schedule data first');
-                        return;
+                    let jsonText = jsonInput.value.trim();
+                    if (jsonText.length == 0) {
+                        jsonText = "[]";
                     }
 
                     individualSchedule = JSON.parse(jsonText);
