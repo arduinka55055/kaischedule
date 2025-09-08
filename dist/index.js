@@ -302,3 +302,140 @@ function downloadHTML(html) {
     a.download = "schedule.html";
     a.click();
 }
+
+
+// -------------------- ICS generation/export --------------------
+function pad(n, len = 2) { return String(n).padStart(len, '0'); }
+
+function formatDateTimeLocal(dt) {
+    // Format as YYYYMMDDTHHMMSS (floating local time)
+    return `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+}
+
+function escapeIcsText(s) {
+    if (!s) return '';
+    return String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+}
+
+function generateIcsContent(week1Data, week2Data, rangeStart, rangeEnd) {
+    const msDay = 24*60*60*1000;
+    const msWeek = 7*msDay;
+
+    // compute Monday of start week
+    const start = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate());
+    const startDayOfWeek = (start.getDay() + 6) % 7; // 0=Mon
+    const startWeekMonday = new Date(start);
+    startWeekMonday.setDate(startWeekMonday.getDate() - startDayOfWeek);
+
+    const lines = [];
+    lines.push('BEGIN:VCALENDAR');
+    lines.push('VERSION:2.0');
+    lines.push('PRODID:-//Kaifix//Schedule//EN');
+    const dtstamp = formatDateTimeLocal(new Date());
+
+    let uidCounter = 0;
+
+    // iterate each date in range inclusive
+    for (let d = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
+        const dayIndex = (d.getDay() + 6) % 7; // Monday=0
+
+        const diffWeeks = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(startWeekMonday.getFullYear(), startWeekMonday.getMonth(), startWeekMonday.getDate())) / msWeek);
+        const isWeek1 = (diffWeeks % 2 === 0);
+
+        const eventsForDay = isWeek1 ? week1Data[dayIndex] || [] : week2Data[dayIndex] || [];
+
+        for (const ev of eventsForDay) {
+            // timetable index to get times
+            const slot = timetable[ev.timetable - 1];
+            if (!slot) continue;
+            const [startTimeStr, endTimeStr] = slot; // e.g. '08:00'
+            const [sh, sm] = startTimeStr.split(':').map(Number);
+            const [eh, em] = endTimeStr.split(':').map(Number);
+
+            const startDt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), sh, sm, 0);
+            const endDt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), eh, em, 0);
+
+            lines.push('BEGIN:VEVENT');
+            lines.push('UID:' + `kaifix-${Date.now()}-${uidCounter++}@local`);
+            lines.push('DTSTAMP:' + dtstamp);
+            lines.push('DTSTART:' + formatDateTimeLocal(startDt));
+            lines.push('DTEND:' + formatDateTimeLocal(endDt));
+            lines.push('SUMMARY:' + escapeIcsText(ev.event || ''));
+            const descParts = [];
+            if (ev.type) descParts.push(ev.type);
+            if (ev.note) descParts.push(ev.note);
+            if (ev.place) descParts.push('Ауд.: ' + ev.place);
+            lines.push('DESCRIPTION:' + escapeIcsText(descParts.join(' | ')));
+            if (ev.place) lines.push('LOCATION:' + escapeIcsText(ev.place));
+
+            // Determine color: blue for practices (labs/practice), green for lectures
+            const typeText = (ev.type || '').toLowerCase();
+            const titleText = (ev.event || '').toLowerCase();
+            let colorHex = '#3B82F6'; // default blue (practice)
+            if (typeText.includes('лек') || titleText.includes('лек')) {
+                colorHex = '#10B981'; // green for lectures
+            } else if (typeText.includes('лаб') || typeText.includes('практ') || titleText.includes('лаб') || titleText.includes('практ')) {
+                colorHex = '#3B82F6'; // blue for labs/practices
+            }
+
+            // Add color hints for Apple/Google and generic COLOR
+            lines.push('COLOR:' + colorHex);
+            lines.push('X-APPLE-CALENDAR-COLOR:' + colorHex);
+            lines.push('X-GOOGLE-CALENDAR-COLOR:' + colorHex);
+
+            // Add 30-minute display alarm
+            lines.push('BEGIN:VALARM');
+            lines.push('TRIGGER:-PT30M');
+            lines.push('ACTION:DISPLAY');
+            lines.push('DESCRIPTION:Нагадування про заняття');
+            lines.push('END:VALARM');
+
+            lines.push('END:VEVENT');
+        }
+    }
+
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n');
+}
+
+async function exportIcsFromInputs(startStr, endStr, selectedGroupID, individualJsonText) {
+    // Parse inputs and fetch group schedule, then enhance and generate ICS
+    const startVal = startStr;
+    const endVal = endStr;
+    if (!startVal || !endVal) throw new Error('Start or end date missing');
+
+    const startDate = new Date(startVal);
+    const endDate = new Date(endVal);
+    if (endDate < startDate) throw new Error('End date before start date');
+
+    // Parse individual JSON (may be empty array)
+    let individual = [];
+    try {
+        individual = individualJsonText && individualJsonText.trim().length ? JSON.parse(individualJsonText) : [];
+    } catch (e) {
+        throw new Error('Invalid individual JSON: ' + e.message);
+    }
+
+    // Fetch group schedules
+    const [group1, group2] = await extractGroupScheduleHTML(selectedGroupID || '');
+
+    // Enhance schedules with individual data
+    const enhanced1 = await enhanceSchedule(group1, individual, '1 тиждень');
+    const enhanced2 = await enhanceSchedule(group2, individual, '2 тиждень');
+
+    // Generate ICS content
+    const ics = generateIcsContent(enhanced1, enhanced2, startDate, endDate);
+
+    // Trigger download
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `schedule_${startVal}_to_${endVal}.ics`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    return true;
+}
+
+// Expose helper to global so HTML can call it
+window.exportIcsFromInputs = exportIcsFromInputs;
