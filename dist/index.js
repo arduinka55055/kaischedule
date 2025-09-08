@@ -210,6 +210,9 @@ function generateSchedule(week1Data, week2Data) {
         week1Events: week1Data[dayIdx],
         week2Events: week2Data[dayIdx]
     }));
+    const daysTotal = Math.max(5,
+        ...[...week1Data, ...week2Data].flat().map(e => e.timetable)
+    );
 
     // Generate HTML
     const html = `
@@ -256,7 +259,7 @@ th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top; }
 </thead>
 <tbody>
 ${weeks.map(day => {
-        return Array.from({ length: 6 }, (_, timeIdx) => {
+        return Array.from({ length: daysTotal }, (_, timeIdx) => {
             const time = timeIdx + 1;
             const w1Event = day.week1Events.find(e => e.timetable === time);
             const w2Event = day.week2Events.find(e => e.timetable === time);
@@ -266,7 +269,7 @@ ${weeks.map(day => {
 
             // Only render day header on first row
             const dayHeaderHtml = timeIdx === 0
-                ? `<td class="day-header" rowspan="6"><div class="rotated-text">${day.name}</div></td>`
+                ? `<td class="day-header" rowspan="${daysTotal}"><div class="rotated-text">${day.name}</div></td>`
                 : "";
 
             return `
