@@ -8,8 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="index.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="vibeSearch.js"></script>
     <style>
         body {
             display: flex;
@@ -70,21 +69,21 @@
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-indigo-50 to-blue-100 min-h-screen">
+<body class="bg-gradient-to-br from-yellow-50 to-orange-100 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-5xl">
         <!-- Header -->
         <header class="text-center mb-12">
             <h1
                 class="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                Генератор Індивідуальних Розкладів КАІ</h1>
+                Генератор Викладацьких Розкладів КАІ</h1>
             <p class="text-gray-700 text-lg max-w-3xl mx-auto leading-relaxed">
-                Згенеруй кращий розклад, який зручніше читати за допомоги цього веб-сайту!
+                Згенеруйте кращий розклад, який зручніше читати за допомоги цього веб-сайту!
                 Також можна завантажити файл гугл-календаря, який за півгодини до заняття казатиме куди йти.
             </p>
             <div class="flex justify-center mt-6">
-                <a href="/teachers.html"
-                    class="bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors text-lg">
-                    Викладачам
+                <a href="/index.html"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition-colors text-lg">
+                    Студентам
                 </a>
             </div>
         </header>
@@ -117,180 +116,98 @@
                         </div>
                     </div>
                 </div>
+                <!-- ALERT for Teachers: Incomplete Schedule -->
+                <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mb-8">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <!-- Alert/Exclamation SVG Icon -->
+                            <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01M4.93 19.07a10 10 0 1114.14 0A10 10 0 014.93 19.07z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800"><b>Увага:</b> Розклад неповний</h3>
+                            <div class="mt-1 text-sm text-red-700">
+                                <p>
+                                    Розклад для викладачів може бути <b>неповним</b> і містити <b>пропуски</b>.
+                                    Перевіряйте інформацію вручну!
+                                    <br>
+                                    Раджу роздрукувати те що є і дописати у клітинки пропущені пари.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Step 1: Group Selection -->
                 <div class="mb-8">
                     <div class="flex items-center mb-4">
                         <div class="step-number">1</div>
-                        <h2 class="text-xl font-semibold text-gray-800">Вибери свою групу</h2>
+                        <h2 class="text-xl font-semibold text-gray-800">Виберіть відповідний ПІБ</h2>
                     </div>
-                    <p class="text-gray-600 mb-4 ml-11">(це підтягне "спільний" розклад)</p>
+                    <p class="text-gray-600 mb-4 ml-11">(Починайте писати прізвище, бо деякі імена скорочені)</p>
 
                     <div class="ml-11 space-y-4">
                         <div class="relative w-full">
                             <input type="text"
                                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm groupComboBox"
-                                placeholder="Розумний пошук групи" autocomplete="off" id="groupSearchInput">
+                                placeholder="Розумний пошук ПІБ" autocomplete="off" id="groupSearchInput">
                             <ul id="groupDropdown"
                                 class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 hidden">
                             </ul>
                         </div>
 
                         <div>
-                            <label for="group-id" class="block text-sm font-medium text-gray-700 mb-1">Або введи айді
-                                групи якщо її нема у випадаючому списку:</label>
+                            <label for="group-id" class="block text-sm font-medium text-gray-700 mb-1">Або введіть айді,
+                                якщо його нема у випадаючому списку:</label>
                             <input type="number" id="group-id"
                                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
-                                placeholder="Наприклад, 334" autocomplete="on">
+                                placeholder="Наприклад, 287" autocomplete="on">
                         </div>
 
                         <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                             Айді групи треба взяти з сайту КАІ, посилання типу
                             <code
-                                class="bg-gray-200 px-2 py-1 rounded text-sm">https://portal.nau.edu.ua/schedule/group?id=334</code>
+                                class="bg-gray-200 px-2 py-1 rounded text-sm">https://portal.nau.edu.ua/schedule/staff?id=287</code>
                             <br>
-                            Відповідно, на цьому сайті пишемо 334.
+                            Відповідно, на цьому сайті пишемо 287.
+                        </div>
+
+                        <div class="flex items-center space-x-3 mt-4">
+                            <label for="expanded-fields" class="text-sm font-medium text-gray-700 mr-2">Розширені
+                                поля</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="expanded-fields" checked class="sr-only peer">
+                                <div
+                                    class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:bg-indigo-600 transition-colors">
+                                </div>
+                                <div
+                                    class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-5">
+                                </div>
+                            </label>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 ml-1">Увімкніть, щоб збільшити поля у розкладі (для
+                            ручних нотаток).</div>
+
+                        <div class="flex items-center space-x-3 mt-4">
+                            <label for="seven-pairs" class="text-sm font-medium text-gray-700 mr-2">У мене 7 пар
+                                🤯</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="seven-pairs" class="sr-only peer">
+                                <div
+                                    class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer peer-checked:bg-indigo-600 transition-colors">
+                                </div>
+                                <div
+                                    class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-5">
+                                </div>
+                            </label>
                         </div>
                     </div>
                 </div>
 
-                <!-- Step 2: JS Code Instructions -->
-                <div class="mb-8">
-                    <div class="flex items-center mb-4">
-                        <div class="step-number">2</div>
-                        <h2 class="text-xl font-semibold text-gray-800">Витягни дані з індивідуального розкладу</h2>
-                    </div>
-
-                    <div class="ml-11 space-y-4">
-                        <p class="text-gray-600">
-                            Перейди на <a class="text-indigo-600 hover:text-indigo-800 font-medium" rel="noopener"
-                                href="https://cabinet.nau.edu.ua/students/elective-choice/schedule"
-                                target="_blank">сторінку університету</a> з розкладом
-                            <br>
-                            Відкрий DevTools (F12) у браузері (це така консолька для розробників) та встав цей код туди:
-                            <br>
-                            Якщо ти користуєшся DevTools вперше, то напиши <code
-                                class="bg-gray-200 px-2 py-1 rounded text-sm">allow pasting</code> перед вставкою.
-                        </p>
-
-                        <div class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto relative">
-                            <pre class="text-sm"><code class="language-javascript">// Schedule scraper for DevTools console
-function scrapeSchedule() {
-    const result = [];
-    
-    // Select all week sections
-    const weekSections = document.querySelectorAll('.week-section');
-    
-    // Process each week section
-    weekSections.forEach(weekSection => {
-        const weekTitle = weekSection.querySelector('.week-title').textContent.trim();
-        
-        // Select all schedule cards (days) in this week
-        const scheduleCards = weekSection.querySelectorAll('.schedule-card');
-        
-        // Process each day card
-        scheduleCards.forEach(card => {
-            const day = card.querySelector('.day').textContent.trim();
-            
-            // Select all subjects in this day
-            const subjects = card.querySelectorAll('.subject');
-            
-            // Process each subject
-            subjects.forEach(subject => {
-                const name = subject.querySelector('.subject-name').textContent.trim();
-                
-                const timeInfo = subject.querySelector('.time');
-                const timeText = timeInfo.textContent.trim();
-                // Extract time using regex (HH:MM-HH:MM format)
-                const timeMatch = timeText.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
-                
-                const typeElement = subject.querySelector('.type');
-                const type = typeElement ? typeElement.textContent.trim() : 'Unknown';
-                
-                if (timeMatch) {
-                    result.push({
-                        discipline: name,
-                        startTime: timeMatch[1],
-                        endTime: timeMatch[2],
-                        type: type,
-                        day: day,
-                        week: weekTitle
-                    });
-                }
-            });
-        });
-    });
-    
-    return result;
-}
-
-// Execute and copy to clipboard
-const scrapedData = scrapeSchedule();
-const jsonData = JSON.stringify(scrapedData, null, 2);
-copy(jsonData);
-console.log('Schedule data copied to clipboard!');
-console.log(jsonData);
-                            </code></pre>
-                            <div class="mt-2 flex justify-end">
-                                <button id="copyCodeBtn"
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg flex items-center transition-colors">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3">
-                                        </path>
-                                    </svg>
-                                    Копіювати код
-                                </button>
-                            </div>
-                        </div>
-
-                        <p class="text-gray-600 text-sm">
-                            Цей код просто перетворює нутрощі сайту КАІ у формат читаємий комп'ютером (JSON). Таким
-                            чином цей сайт
-                            об'єднає твій індивідуальний розклад зі спільним для групи.
-                            WTF??? На жаль, це найпростіший спосіб витягнути інфу з Digital University...
-                            <br>
-                            <br>
-                            <b>Якщо ти з телефону, то можеш залишити поле пустим і сайт зробить розклад без вибіркових
-                                дисциплін.</b>
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Step 3: JSON Input -->
-                <div class="mb-8">
-                    <div class="flex items-center mb-4">
-                        <div class="step-number">3</div>
-                        <h2 class="text-xl font-semibold text-gray-800">Встав JSON, який щойно згенерувався сюди:</h2>
-                    </div>
-
-                    <div class="ml-11">
-                        <textarea id="jsonInput"
-                            class="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm font-mono text-sm"
-                            placeholder='Буде щось типу такого:
-[
-  {
-    "discipline": "Розумне споживання та сталий розвиток",
-    "startTime": "08:00",
-    "endTime": "09:35",
-    "type": "Практ.",
-    "day": "Понеділок",
-    "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-  },
-  {
-    "discipline": "Проєктна робота в лабораторії Ajax (аеронавігація, електроніка та телекомунікації)",
-    "startTime": "09:50",
-    "endTime": "11:25",
-    "type": "Лаб.",
-    "day": "Понеділок",
-    "week": "1 тиждень (вибіркові розпочинаються з 08.09.2025)"
-  }
-  ...і так далі'></textarea>
-                    </div>
-                </div>
-
-                <!-- Step 4: Generate Button -->
+                <!-- Step 2: Generate Button -->
                 <div class="text-center">
                     <button id="generateBtn"
                         class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-md">
@@ -307,8 +224,8 @@ console.log(jsonData);
                     class="text-2xl font-bold text-center mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     Твій покращений розклад:</h2>
 
-                <div class="border rounded-lg overflow-hidden mb-6" style=" overflow-x:auto;">
-                    <iframe class="exportIframe w-full" style="height: 600px; min-width: 600px;"></iframe>
+                <div class="border rounded-lg overflow-hidden mb-6">
+                    <iframe class="exportIframe w-full" style="height: 600px;"></iframe>
                 </div>
 
                 <!-- Export Options -->
@@ -344,8 +261,8 @@ console.log(jsonData);
                             </svg>
                             Друк
                         </button>
-
-                        <button id="createIcsBtn"
+                        <!--todo-->
+                        <button id="createIcsBtn" style="display:none"
                             class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 xmlns="http://www.w3.org/2000/svg">
@@ -414,17 +331,13 @@ console.log(jsonData);
         <div class="container mx-auto px-4">
             <p class="text-sm">
                 Цей сайт <b>НЕ</b> використовує cookies.
-                Щось не виходить? Дай мені знати: <a href="mailto:admin@sudohub.dev"
+                Щось не виходить? Дайте мені знати: <a href="mailto:admin@sudohub.dev"
                     class="text-indigo-300 hover:text-indigo-100">admin@sudohub.dev</a>.
             </p>
         </div>
     </footer>
 
     <script>
-        // Initialize syntax highlighting
-        hljs.highlightAll();
-
-
         document.addEventListener('DOMContentLoaded', function () {
             const groupSelectInput = document.getElementById('groupSearchInput');
             const groupSelectDropdown = document.getElementById('groupDropdown');
@@ -440,7 +353,7 @@ console.log(jsonData);
             let individualSchedule = [];
 
 
-            // Біндинг вибору групи
+            // Біндинг вибору ПІБ
             groupSelectInput.addEventListener('input', async function () {
                 const query = groupSelectInput.value;
                 if (!query) {
@@ -448,10 +361,10 @@ console.log(jsonData);
                     groupSelectDropdown.style.display = 'none';
                     return;
                 }
-                const matches = findTopMatches(await LazyGroupData(), query, 10);
+                const matches = searchNames(await LazyTeacherData(), query, 10);
 
                 groupSelectDropdown.innerHTML = matches.map(match => `
-                    <li class="p-2 hover:bg-indigo-100 cursor-pointer" data-id="${match.id}">${match.groupName}</li>
+                    <li class="p-2 hover:bg-indigo-100 cursor-pointer" data-id="${match[1]}">${match[0]}</li>
                 `).join('');
                 groupSelectDropdown.style.display = matches.length ? 'block' : 'none';
             });
@@ -472,26 +385,16 @@ console.log(jsonData);
             });
 
 
-
             generateBtn.addEventListener('click', async function () {
                 var selectedGroupID = document.querySelector('#group-id').value;
                 try {
-                    let jsonText = jsonInput.value.trim();
-                    if (jsonText.length == 0) {
-                        jsonText = "[]";
-                    }
 
-                    individualSchedule = JSON.parse(jsonText);
-                    if (!Array.isArray(individualSchedule)) {
-                        alert('Invalid data format. Expected an array of events.');
-                        return;
-                    }
-                    const [groupSchedule1, groupSchedule2] = await extractGroupScheduleHTML(selectedGroupID);
+                    const [groupSchedule1, groupSchedule2] = await extractTeacherScheduleHTML(selectedGroupID);
 
-                    const enhancedSchedule1 = await enhanceSchedule(groupSchedule1, individualSchedule, "1 тиждень");
-                    const enhancedSchedule2 = await enhanceSchedule(groupSchedule2, individualSchedule, "2 тиждень");
+                    const minpairs = (document.getElementById('seven-pairs')?.checked) ? 7 : 5;
+                    const expandedfields = document.getElementById('expanded-fields');
 
-                    const htmlStr = generateSchedule(enhancedSchedule1, enhancedSchedule2);
+                    const htmlStr = generateSchedule(groupSchedule1, groupSchedule2, await idToTeacher(selectedGroupID), expandedfields, false, minpairs);
 
                     const iframe = document.querySelector(".exportIframe");
 
@@ -563,27 +466,7 @@ console.log(jsonData);
                 });
             }
 
-            document.getElementById('copyCodeBtn').addEventListener('click', function () {
-                const codeElement = document.querySelector('code.language-javascript');
-                const codeText = codeElement.textContent;
-                navigator.clipboard.writeText(codeText).then(() => {
-                    // Show a nice notification instead of alert
-                    const btn = document.getElementById('copyCodeBtn');
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Скопійовано!';
-                    btn.classList.remove('bg-indigo-600');
-                    btn.classList.add('bg-green-600');
 
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.classList.remove('bg-green-600');
-                        btn.classList.add('bg-indigo-600');
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Failed to copy code:', err);
-                    alert('Не вдалося скопіювати код. Спробуйте ще раз.');
-                });
-            });
 
             // ICS modal handlers
             const createIcsBtn = document.getElementById('createIcsBtn');

@@ -1,7 +1,14 @@
 // Спонсор показу: клятий CORS
 // клятий CORS: піднімай свій сервер навіть для 100% локальної проги.
+
+// Порада дня: немає нічого соромного у вайб кодингу
+// особливо якщо цей код ніхто окрім мене не відкриватиме
+const nauGroupListURL = "/proxy/schedule/group/list"
 const nauGroupScheduleURL = "/proxy/schedule/group"
 const nauElectiveScheduleURL = "/proxy/schedule/elective"
+
+const nauTeacherListURL = "/proxy/schedule/staff/list"
+const nauTeacherScheduleURL = "/proxy/schedule/staff/"
 
 // Табличка часу розкладу
 const timeToIndex = {
@@ -44,11 +51,254 @@ const daysOfWeek = [
     { name: 'Неділя', shortName: 'Нд' }
 ];
 
+
+/**
+ * Коротше кажучи, це офігенний алгоритм який шукає схожі слова
+ * 
+ * Calculates the Levenshtein distance between two strings.
+ * This is the minimum number of single-character edits 
+ * (insertions, deletions, or substitutions) required to change one word into the other.
+ * * @param {string} a The first string.
+ * @param {string} b The second string.
+ * @returns {number} The Levenshtein distance.
+ */
+function levenshteinDistance(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+
+    const matrix = [];
+
+    // Increment along the first column of each row
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+
+    // Increment along the first row of each column
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    // Fill in the rest of the matrix
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1, // substitution
+                    matrix[i][j - 1] + 1,     // insertion
+                    matrix[i - 1][j] + 1      // deletion
+                );
+            }
+        }
+    }
+
+    return matrix[b.length][a.length];
+}
+
+
+function normalizeName(name) {
+    return name.toLowerCase().replace(/ё/g, "е").split(/\s+/).filter(Boolean);
+}
+
+// Generate all permutations of an array
+function permutations(arr) {
+    if (arr.length <= 1) return [arr];
+    const result = [];
+    arr.forEach((item, i) => {
+        const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+        permutations(rest).forEach(p => result.push([item, ...p]));
+    });
+    return result;
+}
+
+function nameDistance(query, candidate) {
+    const qTokens = normalizeName(query);
+    const cTokens = normalizeName(candidate);
+
+    // Pad shorter with empty string to compare fairly
+    while (qTokens.length < cTokens.length) qTokens.push("");
+    while (cTokens.length < qTokens.length) cTokens.push("");
+
+    let bestScore = Infinity;
+    for (const perm of permutations(cTokens)) {
+        let total = 0;
+        for (let i = 0; i < qTokens.length; i++) {
+            total += levenshteinDistance(qTokens[i], perm[i]);
+        }
+        bestScore = Math.min(bestScore, total);
+    }
+
+    // Normalize by average length
+    const avgLen = (qTokens.join("").length + cTokens.join("").length) / 2;
+    return bestScore / avgLen;
+}
+
+/**
+ * Finds the top 10 group names from an object that are the closest Levenshtein matches 
+ * to a given search query.
+ * * @param {Object<string, string>} groupObject The lookup object (groupName -> id).
+ * @param {string} query The search string (e.g., 'Б-G11').
+ * @param {number} [limit=10] The maximum number of results to return.
+ * @returns {Array<Object>} An array of the top matches, sorted by lowest distance.
+ */
+function findTopMatches(groupObject, query, limit = 10) {
+
+    const results = [];
+    const normalizedQuery = query.toUpperCase().trim();
+
+    for (const groupName in groupObject) {
+        if (Object.prototype.hasOwnProperty.call(groupObject, groupName)) {
+            const normalizedGroupName = groupName.toUpperCase().trim();
+            
+            // 1. Calculate Levenshtein Distance
+            const distance = nameDistance(normalizedGroupName, normalizedQuery);
+            
+            // 2. Determine "Starts With" Match
+            // A flag that is TRUE if the group name starts with the query.
+            const startsWithMatch = normalizedGroupName.startsWith(normalizedQuery);
+
+            results.push({
+                groupName: groupName,
+                id: groupObject[groupName],
+                distance: distance,
+                // Add the new scoring factor
+                startsWithMatch: startsWithMatch 
+            });
+        }
+    }
+
+    // Sort logic now prioritizes 'startsWithMatch' first, then 'distance'.
+    results.sort((a, b) => {
+        // Step 1: Prioritize startsWithMatch.
+        // True (1) should come before False (0).
+        // Since we want TRUE to be a better score (closer to 0), we use b.startsWithMatch - a.startsWithMatch.
+        const startsWithScore = (b.startsWithMatch ? 1 : 0) - (a.startsWithMatch ? 1 : 0);
+        if (startsWithScore !== 0) {
+            return startsWithScore;
+        }
+
+        // Step 2: If startsWithMatch is the same (both true or both false), sort by Levenshtein distance.
+        // Lower distance is better (a - b).
+        if (a.distance !== b.distance) {
+            return a.distance - b.distance;
+        }
+
+        // Step 3: Tie-break by groupName (ascending: for consistent sorting).
+        return a.groupName.localeCompare(b.groupName);
+    });
+
+    // Return only the top 'limit' results
+    return results.slice(0, limit);
+}
+
+// Парсинг списку груп і посилань на розклади
+async function scrapeGroupData() {
+
+    const response = await fetch(nauGroupListURL);
+    const htmlText = await response.text();
+
+    // DOM парсинг
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
+
+    // Вибираємо посилання у .groups-list (сподіваюся що digital university не мінятиме його)
+    const groupLinks = doc.querySelectorAll('.groups-list > div > a');
+
+    const groupLookup = {};
+
+    groupLinks.forEach(link => {
+
+        // Видаляємо пробіли
+        const groupName = link.textContent.trim();
+
+        // Отримуємо посилання (відносне)
+        const relativeUrl = link.getAttribute('href');
+
+        // Темна магія regex
+        if (groupName && relativeUrl) {
+            const match = relativeUrl.match(/[?&]id=(\d+)/);
+            const id = match ? match[1] : null;
+            groupLookup[groupName] = id;
+        }
+    });
+
+    return groupLookup;
+}
+
+// Типу lazy load. 
+if (!window._groupDataPromise) {
+    window._groupDataPromise = scrapeGroupData();
+}
+
+async function LazyGroupData() {
+    window.GroupData = await window._groupDataPromise;
+    return window.GroupData;
+}
+
+
+
+// Парсинг списку викладачів і посилань на викладацькі розклади
+async function scrapeTeacherData() {
+    const response = await fetch(nauTeacherListURL);
+    const htmlText = await response.text();
+
+    // DOM парсинг
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
+
+    // Вибираємо посилання у .teachers-list (сподіваюся що digital university не мінятиме його)
+    const teacherLinks = doc.querySelectorAll('.teachers-list li > a');
+
+    const teacherLookup = {};
+
+    teacherLinks.forEach(link => {
+
+        // Видаляємо пробіли
+        const teacherName = link.textContent.trim();
+
+        // Отримуємо посилання (відносне)
+        const relativeUrl = link.getAttribute('href');
+
+        // Темна магія regex
+        if (teacherName && relativeUrl) {
+            const match = relativeUrl.match(/[?&]id=(\d+)/);
+            const id = match ? match[1] : null;
+
+            if (id) {
+                teacherLookup[teacherName] = id;
+            }
+        }
+    });
+
+    return teacherLookup;
+}
+
+// Типу lazy load. 
+if (!window._teacherDataPromise) {
+    window._teacherDataPromise = scrapeTeacherData();
+}
+
+async function LazyTeacherData() {
+    window.TeacherData = await window._teacherDataPromise;
+    return window.TeacherData;
+}
+
+
 // Хелпер щоб парсити пари розкладу групи
-function parsePair(pair) {
+function parsePair(pair, isTeacher = false) {
     const event = pair.querySelector(".subject")?.textContent.trim() ?? "";
     const place = (pair.querySelector(".room")?.textContent.trim() ?? "").replace("ауд. ", "");
-    const note = pair.querySelector(".teacher")?.textContent.trim() ?? "";
+
+    let note;
+    if(isTeacher){
+        note = pair.querySelector(".flow-groups")?.textContent.trim() ?? "";
+    }
+    else
+    {
+        note = pair.querySelector(".teacher")?.textContent.trim() ?? "";
+    }
+
     const timetable = parseInt(
         pair.closest("tr").querySelector("th .name")?.textContent.trim() ?? "0"
     );
@@ -57,12 +307,7 @@ function parsePair(pair) {
 }
 
 async function extractGroupScheduleHTML(groupID) {
-    //debugger;
-    const response = await fetch(nauGroupScheduleURL + "?id=" + groupID, {
-        headers: {
-            //"x-requested-with": "https://cors-anywhere.herokuapp.com/"
-        }
-    });
+    const response = await fetch(nauGroupScheduleURL + "?id=" + groupID);
     const htmlText = await response.text();
 
     // DOM парсинг
@@ -103,8 +348,52 @@ async function extractGroupScheduleHTML(groupID) {
     return [scheduleWeek1, scheduleWeek2]
 }
 
+async function extractTeacherScheduleHTML(teacherID) {
 
-function normalize(str) {
+    const response = await fetch(nauTeacherScheduleURL + "?id=" + teacherID);
+    const htmlText = await response.text();
+
+    // DOM парсинг
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
+
+    // Структура тижнів
+    const scheduleWeek1 = Array.from({ length: 7 }, () => []);
+    const scheduleWeek2 = Array.from({ length: 7 }, () => []);
+
+    // Парсинг табличок з сайту КАІ
+    const tables = doc.querySelectorAll("table.schedule");
+    tables.forEach((table, weekIndex) => {
+        const weekSchedule = weekIndex === 0 ? scheduleWeek1 : scheduleWeek2;
+
+        table.querySelectorAll("tr").forEach((row, rowIdx) => {
+            if (rowIdx === 0) return; // skip header
+
+            const hour = row.querySelector("th.hour-name");
+            if (!hour) return;
+
+            // Each <td> is a day column
+            row.querySelectorAll("td").forEach((cell, dayIdx) => {
+                cell.querySelectorAll("div.pair").forEach((pair) => {
+                    if (pair.querySelector(".subject")) {
+                        const entry = parsePair(pair, true);
+                        weekSchedule[dayIdx].push(entry);
+                    }
+                });
+            });
+        });
+    });
+
+    // Дебаг виведення
+    console.log("Груповий розклад тижня 1:", scheduleWeek1);
+    console.log("Груповий розклад тижня 2:", scheduleWeek2);
+
+    return [scheduleWeek1, scheduleWeek2]
+}
+
+
+
+function normalize2(str) {
   return str
     // decode HTML entities
     .replace(/&[#A-Za-z0-9]+;/g, entity => {
@@ -118,6 +407,11 @@ function normalize(str) {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+async function idToTeacher(id) {
+    const object = await LazyTeacherData();
+    return Object.keys(object).find(key => object[key] === id);
 }
 // Отримати інфу з індивід. дисциплін (як завжди її засунули у саму дупу)
 async function getScheduleInfo(day_id, hour_id, discipline) {
@@ -141,7 +435,7 @@ async function getScheduleInfo(day_id, hour_id, discipline) {
 
         // Look for discipline in rows
         const match = rows.find(row => {
-            return normalize(row.textContent).includes(normalize(discipline));
+            return normalize2(row.textContent).includes(normalize2(discipline));
         });
 
         if (!match) {
@@ -184,7 +478,7 @@ async function enhanceSchedule(groupSchedule, individualData, weekNumber) {
         const dayEvents = enhanced[dayIdx];
 
         const electiveInfo = await getScheduleInfo(dayIdx + (weekNumber[0] == "1" ? 1 : 8), timetable, lesson.discipline);
-        debugger;
+
         // Push new individual lesson
         dayEvents.push({
             event: lesson.discipline,
@@ -204,16 +498,20 @@ async function enhanceSchedule(groupSchedule, individualData, weekNumber) {
 
 
 // Генератор HTML
-function generateSchedule(week1Data, week2Data) {
-    const weeks = daysOfWeek.map((day, dayIdx) => ({
+function generateSchedule(week1Data, week2Data, teacher = 0, expandedFields=false, useWeekends=true, minPairs = 5) {
+    let daysOfWeekChoice = useWeekends ? daysOfWeek : daysOfWeek.slice(0,5);
+    const weeks = daysOfWeekChoice.map((day, dayIdx) => ({
         ...day,
         week1Events: week1Data[dayIdx],
         week2Events: week2Data[dayIdx]
     }));
-    const daysTotal = Math.max(5,
+    const daysTotal = Math.max(minPairs,
         ...[...week1Data, ...week2Data].flat().map(e => e.timetable)
     );
 
+    expandedFields = expandedFields?.checked ? "height: 0.72cm;" : "";
+    const date = new Date().toLocaleDateString('en-CA')
+    const caption = (teacher?.length) ? teacher : "тиждень 1 / тиждень 2";
     // Generate HTML
     const html = `
 <!DOCTYPE html>
@@ -227,7 +525,8 @@ body { font-family: Arial, sans-serif; margin: 0; font-size: 10pt; }
 .page { page-break-after: always; padding: 1cm; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 h3 { margin-left:5mm; }
-th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top; }
+th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top;}
+td { ${expandedFields} }
 .day-header { background: #f8f9fa; font-weight: bold; width: 10mm; text-align: center; }
 .rotated-text { transform: rotate(-90deg); transform-origin: left top; white-space: nowrap; display: inline-block; white-space: nowrap; text-align: center; padding-top: 1mm; text-align: right; width: 25mm; position: relative; top: 26mm; }
 .time-slot { width: 5mm; text-align: center; }
@@ -242,7 +541,7 @@ th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top; }
 </head>
 <body>
 <div class="page">
-<h3>Навчальний розклад (тиждень 1 / тиждень 2)</h3>
+<h3>Навчальний розклад (${caption}) <span style="float:right">${date}</span></h3>
 <table>
 <colgroup>
 <col class="day-header">
@@ -299,7 +598,8 @@ function downloadHTML(html) {
     const blob = new Blob([html], { type: "text/html" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "schedule.html";
+    var date = new Date().toLocaleDateString('en-CA')
+    a.download = `kai-schedule-${date}.html`;
     a.click();
 }
 
@@ -309,7 +609,7 @@ function pad(n, len = 2) { return String(n).padStart(len, '0'); }
 
 function formatDateTimeLocal(dt) {
     // Format as YYYYMMDDTHHMMSS (floating local time)
-    return `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+    return `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
 }
 
 function escapeIcsText(s) {
@@ -318,8 +618,8 @@ function escapeIcsText(s) {
 }
 
 function generateIcsContent(week1Data, week2Data, rangeStart, rangeEnd) {
-    const msDay = 24*60*60*1000;
-    const msWeek = 7*msDay;
+    const msDay = 24 * 60 * 60 * 1000;
+    const msWeek = 7 * msDay;
 
     // compute Monday of start week
     const start = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate());
