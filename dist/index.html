@@ -266,6 +266,13 @@ console.log(jsonData);
                     </div>
 
                     <div class="ml-11">
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="jsonInput" class="block text-sm font-medium text-gray-700">Встав JSON, який щойно згенерувався сюди:</label>
+                            <button id="saveLocalBtn"
+                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-medium py-1 px-3 rounded-lg transition-colors">
+                                Зберегти локально
+                            </button>
+                        </div>
                         <textarea id="jsonInput"
                             class="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm font-mono text-sm"
                             placeholder='Буде щось типу такого:
@@ -787,6 +794,26 @@ console.log(jsonData);
             // Hook opening
             createIcsBtn.addEventListener('click', function () {
                 onOpenIcsModalPrefill();
+            });
+
+            // Local Storage Save/Load
+            const saveLocalBtn = document.getElementById('saveLocalBtn');
+            const JSON_STORAGE_KEY = 'individualScheduleJson';
+
+            // Load from localStorage on page load
+            if (localStorage.getItem(JSON_STORAGE_KEY)) {
+                jsonInput.value = localStorage.getItem(JSON_STORAGE_KEY);
+            }
+
+            // Save to localStorage on button click
+            saveLocalBtn.addEventListener('click', function () {
+                localStorage.setItem(JSON_STORAGE_KEY, jsonInput.value);
+                // Optional: Provide user feedback
+                const originalText = saveLocalBtn.innerHTML;
+                saveLocalBtn.innerHTML = 'Збережено!';
+                setTimeout(() => {
+                    saveLocalBtn.innerHTML = originalText;
+                }, 2000);
             });
         });
     </script>
