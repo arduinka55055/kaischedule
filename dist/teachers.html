@@ -369,7 +369,7 @@
                 groupSelectDropdown.style.display = matches.length ? 'block' : 'none';
             });
 
-            groupSelectDropdown.addEventListener('click', function (e) {
+            groupSelectDropdown.addEventListener('mousedown', function (e) {
                 if (e.target.tagName === 'LI') {
                     groupSelectInput.value = e.target.textContent;
                     groupSelectInput.dataset.groupId = e.target.getAttribute('data-id');
